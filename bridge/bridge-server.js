@@ -151,6 +151,35 @@ async function resolveAndValidate(hostname) {
 
 const MAX_PROXY_BYTES = 25 * 1024 * 1024;
 
+// ---- Spicy Lyrics Plus app files ---------------------------------------------------------
+const APP_DIR = process.env.SLP_APP_DIR || path.join(__dirname, "..", "app");
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webm": "video/webm" };
+
+function serveApp(req, res) {
+  let rel = decodeURIComponent((req.url || "").split("?")[0].replace(/^\/app\/?/, "")) || "index.html";
+  if (rel.endsWith("/")) rel += "index.html";
+  const file = path.resolve(APP_DIR, rel);
+  if (!file.startsWith(path.resolve(APP_DIR) + path.sep)) { res.writeHead(403); res.end("forbidden"); return; }
+  fs.stat(file, (err, st) => {
+    if (err || !st.isFile()) { res.writeHead(404); res.end("not found"); return; }
+    res.writeHead(200, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "Content-Length": st.size, "Cache-Control": "no-cache" });
+    fs.createReadStream(file).pipe(res);
+  });
+}
+
+// ---- settings shared by the Spicy Lyrics Plus app and wallpaper ---------------------------
+const SETTINGS_FILE = path.join(__dirname, "slp-settings.json");
+let slpSettings = {};
+try { slpSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8")) || {}; } catch (_) {}
+let settingsSaveTimer = null;
+function saveSettings() {
+  clearTimeout(settingsSaveTimer);
+  settingsSaveTimer = setTimeout(() => {
+    try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(slpSettings, null, 1)); } catch (e) { console.warn("[settings] save failed:", e.message); }
+  }, 300);
+}
+
 const server = http.createServer((req, res) => {
 
   const m = /^\/art\/([A-Za-z0-9._-]+\.webm)$/.exec(req.url || "");
@@ -220,8 +249,11 @@ const server = http.createServer((req, res) => {
     proxyImage(target, 5);
     return;
   }
+  // Spicy Lyrics Plus (the desktop app opens http://127.0.0.1:<port>/app/).
+  if ((req.url || "").startsWith("/app")) { serveApp(req, res); return; }
+
   res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-  res.end("lyrics-bridge relay: ws + /art/*.webm cache; port " + activePort + "\n");
+  res.end("lyrics-bridge relay: ws + /art/*.webm cache + /app; port " + activePort + "\n");
 });
 
 const wss = new WebSocket.Server({ server });
@@ -403,6 +435,7 @@ wss.on("connection", (ws, req) => {
   if (lastArtMessage && ws.readyState === WebSocket.OPEN) ws.send(lastArtMessage);
   if (lastCanvasMessage && ws.readyState === WebSocket.OPEN) ws.send(lastCanvasMessage);
   if (lastPlayerMessage && ws.readyState === WebSocket.OPEN) ws.send(lastPlayerMessage);
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ settings: slpSettings, full: true }));
 
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
@@ -417,6 +450,16 @@ wss.on("connection", (ws, req) => {
       // is the player in use, any other player through Windows' media controls.
       if (obj && typeof obj.command === "string") {
         routeCommand(obj.command, ws);
+        return;
+      }
+
+      if (obj && obj.settings && typeof obj.settings === "object" && !Array.isArray(obj.settings)) {
+        for (const [k, v] of Object.entries(obj.settings)) {
+          if (typeof k === "string" && k.length < 80 && !k.startsWith("motion-cache:")) slpSettings[k] = v;
+        }
+        saveSettings();
+        const out = JSON.stringify({ settings: obj.settings });
+        for (const c of wss.clients) if (c !== ws && c.readyState === WebSocket.OPEN) c.send(out);
         return;
       }
 
@@ -925,7 +968,8 @@ async function onCanvas(obj) {
   const url = obj.canvasUrl || "";
   canvasKey = trackId;
   if (!url) { clearCanvas(trackId); return; }       // no/image Canvas → static cover
-  if (!FFMPEG) return;
+  // No ffmpeg: hand out Spotify's mp4 as is (the desktop app plays it; Wallpaper Engine can't).
+  if (!FFMPEG) { lastCanvasMessage = broadcastObj({ canvasVideo: { trackId, url, mp4: true } }); return; }
 
   const file = canvasCacheFile(trackId);
   if (fs.existsSync(file)) { announceCanvas(trackId, file); return; }
