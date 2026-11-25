@@ -8,7 +8,7 @@
     "start": "node bridge-server.js"
   },
   "dependencies": {
-    "ws": "^8.21.0"
+    "ws": "^8.23.0"
   },
   "license": "MIT"
 }

@@ -1,0 +1,7 @@
+bridge/node_modules/
+bridge/cache/
+bridge/bridge-*.lock
+bridge/bridge-port.json
+bridge/smtc-command.txt
+bridge/am-token.json
+bridge/art-config.json

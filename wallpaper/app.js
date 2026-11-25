@@ -17,6 +17,12 @@
   const FALLBACK_AFTER = 5000;
 
   let lyricsOffset = 300;
+  let translateTo = "";
+  let romanizeOn = false;
+  let upgradeLyrics = true;
+  let currentLyrics = null;
+  let currentTrack = null;
+  let lyricsToken = 0;
 
   const statusEl = document.getElementById("status");
   const artEl = document.getElementById("art");
@@ -134,6 +140,7 @@
       clearTimeout(timer);
       opened = true;
       connected = true;
+      document.body.classList.remove("show-hint");
       backoffIndex = 0;
       setStatus("connected");
       Background.setProxyBase(`http://localhost:${tryPort}`);
@@ -145,6 +152,7 @@
       clearTimeout(timer);
       if (sock !== ws) return;             // superseded by a newer attempt
       connected = false;
+      document.body.classList.add("show-hint");
       if (!opened) portIndex++;            // nothing was listening on that port
       if (!usingMock) setStatus("disconnected");
       scheduleReconnect();
@@ -168,6 +176,8 @@
   function handleMessage(raw) {
     let msg;
     try { msg = JSON.parse(raw); } catch (_) { return; }
+    if (msg.command) return;                // another wallpaper's control request
+    if (msg.player) { Controls.setPlayer(msg.player); return; }
     lastBridgeMsg = Date.now();
     if (lyricsSource === "windows") return; // Windows-Media mode ignores the relay
     lastRealMessage = Date.now();
@@ -200,6 +210,7 @@
   }
 
   function applyMessage(msg, isMock) {
+    if (msg.cleared) { idle(); return; }
     if (msg.animatedArt) { applyAnimatedArt(msg.animatedArt); return; }
     if (msg.canvasVideo) { applyCanvasVideo(msg.canvasVideo); return; }
 
@@ -210,6 +221,8 @@
       state.timestamp = Date.now();
       state.isPlaying = msg.isPlaying;
     }
+
+    Controls.setPlaying(state.isPlaying);
 
     if (msg.track) {
       const key = msg.track.title + " | " + msg.track.artist;
@@ -230,16 +243,54 @@
         }
       }
 
+      currentTrack = msg.track;
       const lyrics = msg.lyrics || null;
-      if (lyrics && lyrics.lines && lyrics.lines.length) {
-        noLyricsEl.classList.remove("show");
-        viewportEl.style.visibility = "";
-        LyricsEngine.setLyrics(lyrics);
-        LyricsEngine.update(extrapolate());
-      } else {
-        showNoLyrics(msg.track);
+      if (lyrics && lyrics.lines && lyrics.lines.length) showLyrics(lyrics);
+      else if (trackChanged || !currentLyrics) showNoLyrics(msg.track);
+      // Line-timed (or no) lyrics: ask the word-by-word sources too, and switch if they have it.
+      if (!isMock && upgradeLyrics && window.LyricsSources && (!lyrics || lyrics.type !== "syllable") && (trackChanged || !lyricsUpgradeTried)) {
+        lyricsUpgradeTried = true;
+        const token = ++lyricsToken;
+        LyricsSources.find(msg.track, { wordOnly: !!(lyrics && lyrics.lines && lyrics.lines.length) }).then((better) => {
+          if (token !== lyricsToken || key !== state.trackKey || !better || !better.lines.length) return;
+          if (currentLyrics && currentLyrics.type === "syllable") return;
+          showLyrics(better);
+        });
       }
+      if (trackChanged) lyricsUpgradeTried = !!(lyrics && lyrics.type === "syllable");
     }
+  }
+
+  let lyricsUpgradeTried = false;
+
+  function showLyrics(lyrics) {
+    if (lyrics === currentLyrics) return;
+    currentLyrics = lyrics;
+    noLyricsEl.classList.remove("show");
+    viewportEl.style.visibility = "";
+    LyricsEngine.setLyrics(lyrics);
+    LyricsEngine.update(extrapolate());
+    refreshSubtitles();
+  }
+
+  function refreshSubtitles() {
+    const lyrics = currentLyrics;
+    LyricsEngine.setSubtitles(null);
+    if (!lyrics || !lyrics.lines || !lyrics.lines.length || !window.LyricsSources) return;
+    const job = translateTo ? LyricsSources.translate(lyrics, translateTo) : romanizeOn ? LyricsSources.romanize(lyrics) : null;
+    if (!job) return;
+    job.then((list) => { if (lyrics === currentLyrics) LyricsEngine.setSubtitles(list); }).catch(() => {});
+  }
+
+  function idle() {
+    state.trackKey = null;
+    currentTrack = null;
+    currentLyrics = null;
+    LyricsEngine.setLyrics(null);
+    viewportEl.style.visibility = "hidden";
+    titleEl.textContent = "";
+    artistEl.textContent = "";
+    durationMs = 0;
   }
 
   function extrapolate() {
@@ -289,6 +340,7 @@
   }
 
   function showNoLyrics(track) {
+    currentLyrics = null;
     LyricsEngine.setLyrics(null);
     viewportEl.style.visibility = "hidden";
     nlTitle.textContent = "";
@@ -483,6 +535,12 @@
     },
     showStatusDot:    (v) => { statusEl.style.display = v ? "block" : "none"; },
     lyricsSource:     (v) => { lyricsSource = String(v || "auto"); },
+    translateTo:      (v) => { translateTo = String(v || ""); refreshSubtitles(); },
+    romanize:         (v) => { romanizeOn = !!v; refreshSubtitles(); },
+    upgradeLyrics:    (v) => { upgradeLyrics = !!v; },
+    showControls:     (v) => Controls.setVisible(!!v),
+    vinylCover:       (v) => document.body.classList.toggle("vinyl", !!v),
+    showUpNext:       (v) => document.body.classList.toggle("no-upnext", !v),
     websocketPort:    (v) => {
       const p = parseInt(v, 10);
       if (p && p !== port) { port = p; portIndex = 0; reconnectNow(); }
@@ -501,8 +559,29 @@
     },
   };
 
+  // Controls (play/pause, previous, next, seek, click a line) go to the relay, which runs them
+  // in Spotify through Spicetify or on any player through Windows' media controls.
+  function sendCommand(command) {
+    if (!(ws && ws.readyState === WebSocket.OPEN)) return false;
+    try { ws.send(JSON.stringify({ command })); } catch (_) { return false; }
+    return true;
+  }
+  Controls.init({
+    send: sendCommand,
+    canControl: () => connected,
+    duration: () => durationMs,
+    position: () => extrapolate(),
+  });
+  LyricsEngine.setSeekHandler((ms) => {
+    if (sendCommand("seek " + Math.max(0, Math.round(ms - lyricsOffset)))) {
+      state.position = Math.max(0, ms - lyricsOffset);
+      state.timestamp = Date.now();
+      LyricsEngine.forceSnap();
+    }
+  });
+
   connect();
-  if (window.MediaNative) MediaNative.start(onNativeMessage);
+  if (window.MediaNative) MediaNative.start(onNativeMessage, (on) => document.body.classList.toggle("media-off", !on));
   initAudio();
   requestAnimationFrame(frame);
 })();

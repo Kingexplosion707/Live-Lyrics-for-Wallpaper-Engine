@@ -10,7 +10,7 @@
     /* karaoke wipe: ink = leading edge, ink-tail = trailing, soft = feather band */
     --wipe-ink: 0.86;
     --wipe-ink-tail: 0.35;
-    --wipe-angle: 180deg;
+    --wipe-angle: 90deg;
     --wipe-soft: 18%;
     --wipe-bias: 0%;
 
@@ -85,7 +85,6 @@ body {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     user-select: none;
-    cursor: none;
 }
 
 #bg {
@@ -524,14 +523,14 @@ body.title-accent #title {
     will-change: transform, opacity;
 }
 
-.fill {
-    /* --wipe is the 0..1 sing-through progress. The feather band (--wipe-soft) also
-       supplies the head/tail overshoot, so 0 leaves the text untouched and 1 covers it.
-
-       NOTE: declaring --wipe on .fill itself shadows the value the engine writes on the
-       parent .line / .wg, which parks the wipe at its start position. Kept as-is so the
-       look does not change; hoist this line to .line to let the wipe actually travel. */
+.line {
     --wipe: 0;
+}
+
+.fill {
+    /* --wipe (0..1, written by the engine on the .line or .wg) is the sing-through progress.
+       The feather band (--wipe-soft) supplies the head/tail overshoot, so 0 leaves the text
+       untouched and 1 covers it. */
     --wipe-edge: calc(var(--wipe) * (100% + var(--wipe-soft)) - var(--wipe-soft));
     background-image: linear-gradient( var(--wipe-angle), rgba(255, 255, 255, var(--wipe-ink)) var(--wipe-edge), rgba(255, 255, 255, var(--wipe-ink-tail)) calc(var(--wipe-edge) + var(--wipe-soft) + var(--wipe-bias)) );
     -webkit-background-clip: text;
@@ -596,3 +595,183 @@ body.title-accent #title {
         background: #f0a500;
         box-shadow: 0 0 10px #f0a500;
     }
+
+
+/* ---- Spicy Lyrics Plus additions ------------------------------------------------ */
+
+.line .sub {
+    display: block;
+    font-size: 0.5em;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0;
+    margin-top: 0.18em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.line .sub:empty {
+    display: none;
+}
+
+.line {
+    cursor: pointer;
+}
+
+.credits {
+    margin-top: 2.2em;
+    font-size: calc(clamp(var(--line-size-floor), var(--line-size-fluid), var(--line-size-ceil)) * var(--font-scale) * 0.38);
+    font-weight: 600;
+    opacity: 0.45;
+}
+
+#controls {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 0.8vw, 18px);
+    margin-top: 0.2em;
+    opacity: 0.55;
+    transition: opacity 0.3s ease;
+    font-size: calc(clamp(14px, 1vw, 22px) * var(--info-scale));
+}
+
+#controls:hover {
+    opacity: 1;
+}
+
+#controls.off {
+    opacity: 0.18;
+    pointer-events: none;
+}
+
+body.no-controls #controls,
+body.no-controls #up-next {
+    display: none;
+}
+
+.ctl-btn {
+    width: 2.4em;
+    height: 2.4em;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+
+.ctl-btn svg {
+    width: 1.3em;
+    height: 1.3em;
+    fill: currentColor;
+}
+
+.ctl-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.ctl-btn.ctl-main {
+    width: 3em;
+    height: 3em;
+    background: #fff;
+    color: #000;
+}
+
+.ctl-btn.ctl-main svg {
+    width: 1.45em;
+    height: 1.45em;
+}
+
+.ctl-btn.ctl-small {
+    display: none;
+    width: 2em;
+    height: 2em;
+}
+
+.ctl-btn.ctl-small svg {
+    width: 1em;
+    height: 1em;
+}
+
+#controls.has-spotify .ctl-small {
+    display: inline-flex;
+}
+
+.ctl-btn.on {
+    color: rgb(var(--accent-rgb));
+}
+
+.ctl-btn.pulse {
+    animation: ctl-pulse 0.3s ease;
+}
+
+@keyframes ctl-pulse {
+    50% { transform: scale(0.88); }
+}
+
+#progress-track {
+    cursor: pointer;
+}
+
+#up-next {
+    font-size: calc(clamp(12px, 0.8vw, 18px) * var(--info-scale));
+    opacity: 0.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+body.no-upnext #up-next {
+    display: none;
+}
+
+/* Vinyl: the cover spins as a record while music plays. */
+body.vinyl #art {
+    border-radius: 50% !important;
+    animation: vinyl-spin 10s linear infinite;
+    animation-play-state: paused;
+    box-shadow: 0 2.6vh 10vh rgba(0, 0, 0, 0.5), 0 0 0 1.2vw #0d0d0f, 0 0 0 calc(1.2vw + 1px) rgba(255, 255, 255, 0.08);
+}
+
+body.vinyl.playing #art {
+    animation-play-state: running;
+}
+
+body.vinyl #art::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 12%;
+    height: 12%;
+    margin: -6%;
+    border-radius: 50%;
+    background: #08080a;
+    box-shadow: 0 0 0 0.6vw rgba(255, 255, 255, 0.1);
+    z-index: 2;
+}
+
+@keyframes vinyl-spin {
+    to { transform: translate(var(--art-dx), var(--art-dy)) rotate(360deg); }
+}
+
+#media-hint {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 4vh;
+    transform: translateX(-50%);
+    z-index: 5;
+    padding: 0.7em 1.2em;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    font-size: clamp(12px, 0.9vw, 18px);
+    opacity: 0.85;
+}
+
+body.media-off.show-hint #media-hint {
+    display: block;
+}

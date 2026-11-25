@@ -1,7 +1,7 @@
 # MinenkoY
 # lyric music by am1dreaming - web bootstrap installer.
 #     iwr -useb https://raw.githubusercontent.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex
-$Owner = 'am1dreaming'
+$Owner = 'Kingexplosion707'
 $Repo = 'Live-Lyrics-for-Wallpaper-Engine'
 $Branch = 'main'
 

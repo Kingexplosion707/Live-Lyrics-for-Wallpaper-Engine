@@ -24,7 +24,7 @@ No React, no bloat - just clean vanilla JS/CSS.
 **Install in one line — paste into PowerShell:**
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex
 ```
 
 <sub>
@@ -90,7 +90,7 @@ iwr -useb https://raw.githubusercontent.com/am1dreaming/Live-Lyrics-for-Wallpape
 **Option A — one line (recommended).** Open PowerShell and paste:
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/am1dreaming/live-lyrics/main/install-web.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex
 ```
 
 **Option B — one click.** Download this repo → double-click **`Install.bat`** → accept the admin prompt.
