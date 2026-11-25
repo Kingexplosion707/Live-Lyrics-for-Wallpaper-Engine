@@ -56,6 +56,8 @@
     if (Spicetify.Player.data && Spicetify.Player.data.item) {
       onSongChange();
     }
+    // Liked / shuffle / repeat / queue change without a song change.
+    setInterval(sendPlayer, 4000);
   }
 
   function connect() {
@@ -88,8 +90,10 @@
       }
     };
 
-    sock.onmessage = () => {
-
+    sock.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch (_) { return; }
+      if (msg && typeof msg.command === "string") runCommand(msg.command);
     };
 
     sock.onerror = () => {
@@ -118,6 +122,60 @@
       } catch (e) {
         warn("send failed", e);
       }
+    }
+  }
+
+  // Controls from the wallpaper (or any relay client).
+  function runCommand(command) {
+    const P = Spicetify.Player;
+    try {
+      const seek = /^seek (\d+)$/.exec(command);
+      if (seek) P.seek(Number(seek[1]));
+      else if (command === "toggle") P.togglePlay();
+      else if (command === "play") P.play();
+      else if (command === "pause") P.pause();
+      else if (command === "next") P.next();
+      else if (command === "previous") P.back();
+      else if (command === "like") P.toggleHeart();
+      else if (command === "shuffle") P.toggleShuffle();
+      else if (command === "repeat") P.toggleRepeat();
+      else return;
+    } catch (e) {
+      warn("command failed:", command, e);
+    }
+    setTimeout(() => { sendLight(); sendPlayer(); }, 250);
+  }
+
+  /** What only Spotify knows, for the wallpaper's controls: liked, shuffle, repeat, up next. */
+  function sendPlayer() {
+    const P = Spicetify.Player;
+    let next = "";
+    try {
+      const t = (Spicetify.Queue && Spicetify.Queue.nextTracks || []).find((x) => x && x.contextTrack && x.contextTrack.metadata && x.contextTrack.metadata.title);
+      if (t) next = t.contextTrack.metadata.title + " · " + (t.contextTrack.metadata.artist_name || "");
+    } catch (_) {}
+    const safe = (fn, d) => { try { return fn(); } catch (_) { return d; } };
+    send({
+      player: {
+        spotify: true,
+        liked: !!safe(() => P.getHeart(), false),
+        shuffle: !!safe(() => P.getShuffle(), false),
+        repeat: safe(() => P.getRepeat(), 0) || 0,
+        next,
+      },
+    });
+  }
+
+  /** The song's Spotify Canvas video (mp4) or "", for the relay's Canvas background. */
+  async function fetchCanvas(uri) {
+    try {
+      const def = Spicetify.GraphQL && Spicetify.GraphQL.Definitions && Spicetify.GraphQL.Definitions.canvas;
+      if (!def) return "";
+      const res = await Spicetify.GraphQL.Request(def, { uri, trackUri: uri });
+      const url = res && res.data && res.data.trackUnion && res.data.trackUnion.canvas && res.data.trackUnion.canvas.url;
+      return typeof url === "string" && /\.mp4/.test(url) ? url : "";
+    } catch (_) {
+      return "";
     }
   }
 
@@ -174,6 +232,7 @@
         "Unknown Artist",
 
       album: meta.album_title || "",
+      id: getTrackId() || "",
       coverUrl: normalizeImage(
         meta.image_xlarge_url ||
           meta.image_large_url ||
@@ -281,6 +340,7 @@
       isPlaying: isPlaying(),
       timestamp: Date.now(),
       lyrics: currentLyrics === undefined ? null : currentLyrics,
+      pending: currentLyrics === undefined,
     };
     send(msg);
   }
@@ -300,6 +360,15 @@
   async function onSongChange() {
     const trackId = getTrackId();
     currentTrackId = trackId;
+    // Title, cover and position right away; the lyrics follow.
+    currentLyrics = undefined;
+    sendFull();
+    sendPlayer();
+
+    const uri = Spicetify.Player.data && Spicetify.Player.data.item && Spicetify.Player.data.item.uri;
+    fetchCanvas(uri).then((canvasUrl) => {
+      if (currentTrackId === trackId) send({ trackId, canvasUrl });
+    });
 
     const fetched = await fetchLyrics(trackId);
     if (currentTrackId !== trackId) return;
@@ -319,6 +388,7 @@
 
   function onPlayPause() {
     sendLight();
+    sendPlayer();
   }
 
   init();

@@ -1,6 +1,6 @@
 {
   "title": "lyric music by am1dreaming",
-  "description": "Your Spotify song, synced word-by-word on your desktop - smooth karaoke-style\nlyrics that follow the music. Accent color pulled from the album cover, live\ncover art, audio-reactive effects. Ultrawide-ready (16:9 / 21:9 / 32:9).\n\n⚠️ SETUP REQUIRED — on its own this wallpaper shows a DEMO track. To display YOUR\nreal Spotify lyrics it needs a tiny free helper (Spicetify extension + local\nrelay). One-line install in PowerShell:\n\n  iwr -useb https://raw.githubusercontent.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex\n\nFull guide & source code:\n  https://github.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine\n\nFeatures:\n• Word-by-word sync with letter emphasis + spring auto-scroll\n• Accent color from the cover, frosted backdrop behind the active line\n• Backgrounds: blurred cover / solid color / your image / your video\n• Live animated covers + audio-reactive pulse\n• Fully positionable & customizable in the WE settings panel\n\nNo Spotify running? A demo track plays so you can preview the look.\n\nCreated by MinenkoY · not affiliated with Spotify or Wallpaper Engine.",
+  "description": "Your Spotify song, synced word-by-word on your desktop - smooth karaoke-style\nlyrics that follow the music. Accent color pulled from the album cover, live\ncover art, audio-reactive effects. Ultrawide-ready (16:9 / 21:9 / 32:9).\n\nWorks on its own: turn on Media integration in Wallpaper Engine's settings and it\nfollows whatever plays (word-by-word when Apple Music / Spicy Lyrics have it).\nFor Spotify Canvas, live covers and every control, add the free helper\n(Spicetify extension + local relay). One-line install in PowerShell:\n\n  iwr -useb https://raw.githubusercontent.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex\n\nFull guide & source code:\n  https://github.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine\n\nFeatures:\n• Word-by-word sync with letter emphasis + spring auto-scroll\n• Accent color from the cover, frosted backdrop behind the active line\n• Backgrounds: blurred cover / solid color / your image / your video\n• Live animated covers + audio-reactive pulse\n• Playback controls, translation, romanization, vinyl cover\n• Fully positionable & customizable in the WE settings panel\n\nNo Spotify running? A demo track plays so you can preview the look.\n\nCreated by MinenkoY · not affiliated with Spotify or Wallpaper Engine.",
   "type": "web",
   "file": "index.html",
   "preview": "preview.gif",
@@ -173,13 +173,13 @@
         "value": true
       },
       "activeHighlight": {
-        "order": 35,
+        "order": 41,
         "text": "Frosted backdrop behind active line",
         "type": "bool",
         "value": false
       },
       "highlightBlur": {
-        "order": 36,
+        "order": 42,
         "text": "Backdrop blur (px)",
         "type": "slider",
         "value": 40,
@@ -188,12 +188,12 @@
         "step": 1
       },
       "sectionLayout": {
-        "order": 45,
+        "order": 51,
         "type": "text",
         "text": "───────  LAYOUT  ───────"
       },
       "offsetX": {
-        "order": 46,
+        "order": 52,
         "text": "Shift all content X (vw)",
         "type": "slider",
         "value": 10,
@@ -202,7 +202,7 @@
         "step": 0.5
       },
       "offsetY": {
-        "order": 47,
+        "order": 53,
         "text": "Shift all content Y (vh)",
         "type": "slider",
         "value": -2,
@@ -211,7 +211,7 @@
         "step": 0.5
       },
       "columnSplit": {
-        "order": 48,
+        "order": 54,
         "text": "Left column width (%)",
         "type": "slider",
         "value": 33,
@@ -220,12 +220,12 @@
         "step": 1
       },
       "sectionBlocks": {
-        "order": 50,
+        "order": 56,
         "type": "text",
         "text": "───────  BLOCK POSITIONS (cover / title / artist)  ───────"
       },
       "infoOffsetX": {
-        "order": 51,
+        "order": 57,
         "text": "Info block: X (vw)",
         "type": "slider",
         "value": 0,
@@ -234,7 +234,7 @@
         "step": 0.25
       },
       "infoOffsetY": {
-        "order": 52,
+        "order": 58,
         "text": "Info block: Y (vh)",
         "type": "slider",
         "value": 0,
@@ -243,7 +243,7 @@
         "step": 0.25
       },
       "titleOffsetX": {
-        "order": 53,
+        "order": 59,
         "text": "Title: X (vw)",
         "type": "slider",
         "value": 0,
@@ -252,7 +252,7 @@
         "step": 0.25
       },
       "titleOffsetY": {
-        "order": 54,
+        "order": 60,
         "text": "Title: Y (vh)",
         "type": "slider",
         "value": 0,
@@ -261,7 +261,7 @@
         "step": 0.25
       },
       "artistOffsetX": {
-        "order": 55,
+        "order": 61,
         "text": "Artist: X (vw)",
         "type": "slider",
         "value": 0,
@@ -270,7 +270,7 @@
         "step": 0.25
       },
       "artistOffsetY": {
-        "order": 56,
+        "order": 62,
         "text": "Artist: Y (vh)",
         "type": "slider",
         "value": 0,
@@ -279,7 +279,7 @@
         "step": 0.25
       },
       "progressOffsetX": {
-        "order": 57,
+        "order": 63,
         "text": "Progress: X (vw)",
         "type": "slider",
         "value": 0,
@@ -288,7 +288,7 @@
         "step": 0.25
       },
       "progressOffsetY": {
-        "order": 58,
+        "order": 64,
         "text": "Progress: Y (vh)",
         "type": "slider",
         "value": 0,
@@ -297,7 +297,7 @@
         "step": 0.25
       },
       "artOffsetX": {
-        "order": 59,
+        "order": 65,
         "text": "Cover art: X (vw)",
         "type": "slider",
         "value": 0,
@@ -306,7 +306,7 @@
         "step": 0.25
       },
       "artOffsetY": {
-        "order": 60,
+        "order": 66,
         "text": "Cover art: Y (vh)",
         "type": "slider",
         "value": 0,
@@ -315,18 +315,18 @@
         "step": 0.25
       },
       "sectionInfo": {
-        "order": 65,
+        "order": 71,
         "type": "text",
         "text": "───────  COVER & INFO  ───────"
       },
       "showAlbumArt": {
-        "order": 68,
+        "order": 74,
         "text": "Show cover art",
         "type": "bool",
         "value": true
       },
       "albumArtSize": {
-        "order": 69,
+        "order": 75,
         "text": "Cover art size (%)",
         "type": "slider",
         "value": 140,
@@ -335,13 +335,13 @@
         "step": 1
       },
       "liveCovers": {
-        "order": 70,
+        "order": 76,
         "text": "Live covers (Apple Music, needs bridge + ffmpeg)",
         "type": "bool",
         "value": true
       },
       "artQuality": {
-        "order": 71,
+        "order": 77,
         "text": "Live cover quality",
         "type": "combo",
         "value": "1080",
@@ -361,19 +361,19 @@
         ]
       },
       "showArtist": {
-        "order": 72,
+        "order": 78,
         "text": "Show artist",
         "type": "bool",
         "value": true
       },
       "showProgress": {
-        "order": 73,
+        "order": 79,
         "text": "Show track progress",
         "type": "bool",
         "value": true
       },
       "infoOpacity": {
-        "order": 75,
+        "order": 84,
         "text": "Info block opacity (%)",
         "type": "slider",
         "value": 50,
@@ -382,7 +382,7 @@
         "step": 1
       },
       "infoSize": {
-        "order": 76,
+        "order": 85,
         "text": "Info block text size (%)",
         "type": "slider",
         "value": 100,
@@ -391,12 +391,12 @@
         "step": 1
       },
       "sectionArtFx": {
-        "order": 77,
+        "order": 86,
         "type": "text",
         "text": "───────  COVER: GEOMETRY & EFFECTS  ───────"
       },
       "artRadius": {
-        "order": 78,
+        "order": 87,
         "text": "Corner rounding (%, 50 = circle)",
         "type": "slider",
         "value": 3,
@@ -405,7 +405,7 @@
         "step": 1
       },
       "artOpacity": {
-        "order": 79,
+        "order": 88,
         "text": "Cover art opacity (%)",
         "type": "slider",
         "value": 100,
@@ -414,7 +414,7 @@
         "step": 1
       },
       "artShadow": {
-        "order": 80,
+        "order": 89,
         "text": "Shadow strength (%)",
         "type": "slider",
         "value": 130,
@@ -423,7 +423,7 @@
         "step": 5
       },
       "artGlow": {
-        "order": 81,
+        "order": 90,
         "text": "Glow in cover color (%)",
         "type": "slider",
         "value": 0,
@@ -432,7 +432,7 @@
         "step": 5
       },
       "artBorder": {
-        "order": 82,
+        "order": 91,
         "text": "Border in cover color (px)",
         "type": "slider",
         "value": 0,
@@ -441,7 +441,7 @@
         "step": 1
       },
       "artRotate": {
-        "order": 83,
+        "order": 92,
         "text": "Tilt (°)",
         "type": "slider",
         "value": 0,
@@ -450,12 +450,12 @@
         "step": 0.5
       },
       "sectionBackground": {
-        "order": 87,
+        "order": 96,
         "type": "text",
         "text": "───────  BACKGROUND  ───────"
       },
       "backgroundMode": {
-        "order": 88,
+        "order": 97,
         "text": "Background type",
         "type": "combo",
         "value": "cover",
@@ -487,7 +487,7 @@
         ]
       },
       "backgroundBlur": {
-        "order": 89,
+        "order": 98,
         "text": "Cover background blur (px)",
         "type": "slider",
         "value": 100,
@@ -496,27 +496,27 @@
         "step": 1
       },
       "backgroundColor": {
-        "order": 90,
+        "order": 99,
         "text": "Background color (Solid color mode)",
         "type": "color",
         "value": "0.1450980392156863 0.1450980392156863 0.1843137254901961"
       },
       "backgroundImage": {
-        "order": 91,
+        "order": 100,
         "text": "Image (jpg/png/gif/webp)",
         "type": "file",
         "fileType": "image",
         "value": ""
       },
       "backgroundVideo": {
-        "order": 92,
+        "order": 101,
         "text": "Video (.webm/.ogv — mp4 via convert-to-webm.bat)",
         "type": "file",
         "fileType": "video",
         "value": ""
       },
       "backgroundDim": {
-        "order": 93,
+        "order": 102,
         "text": "Custom background dim (readability, %)",
         "type": "slider",
         "value": 0,
@@ -525,7 +525,7 @@
         "step": 1
       },
       "customBgBlur": {
-        "order": 94,
+        "order": 103,
         "text": "Custom background blur (px)",
         "type": "slider",
         "value": 0,
@@ -534,7 +534,7 @@
         "step": 1
       },
       "grain": {
-        "order": 95,
+        "order": 104,
         "text": "Grain (film noise, %)",
         "type": "slider",
         "value": 81,
@@ -543,12 +543,12 @@
         "step": 1
       },
       "sectionBgFraming": {
-        "order": 97,
+        "order": 106,
         "type": "text",
         "text": "───────  CUSTOM BACKGROUND: FRAMING  ───────"
       },
       "bgFit": {
-        "order": 98,
+        "order": 107,
         "text": "Image/video fit",
         "type": "combo",
         "value": "cover",
@@ -572,7 +572,7 @@
         ]
       },
       "bgPosX": {
-        "order": 99,
+        "order": 108,
         "text": "Position X (%)",
         "type": "slider",
         "value": 50,
@@ -581,7 +581,7 @@
         "step": 1
       },
       "bgPosY": {
-        "order": 100,
+        "order": 109,
         "text": "Position Y (%)",
         "type": "slider",
         "value": 50,
@@ -590,7 +590,7 @@
         "step": 1
       },
       "bgZoom": {
-        "order": 101,
+        "order": 110,
         "text": "Zoom (%)",
         "type": "slider",
         "value": 100,
@@ -599,7 +599,7 @@
         "step": 1
       },
       "bgSaturation": {
-        "order": 102,
+        "order": 111,
         "text": "Saturation (%)",
         "type": "slider",
         "value": 100,
@@ -608,7 +608,7 @@
         "step": 5
       },
       "bgBrightness": {
-        "order": 103,
+        "order": 112,
         "text": "Brightness (%)",
         "type": "slider",
         "value": 100,
@@ -617,24 +617,24 @@
         "step": 5
       },
       "bgFlipH": {
-        "order": 104,
+        "order": 113,
         "text": "Flip horizontally",
         "type": "bool",
         "value": false
       },
       "sectionAudio": {
-        "order": 107,
+        "order": 116,
         "type": "text",
         "text": "───────  AUDIO REACTION  ───────"
       },
       "audioReactive": {
-        "order": 108,
+        "order": 117,
         "text": "Background pulse with music",
         "type": "bool",
         "value": false
       },
       "audioStrength": {
-        "order": 109,
+        "order": 118,
         "text": "Pulse strength (%)",
         "type": "slider",
         "value": 200,
@@ -643,18 +643,18 @@
         "step": 5
       },
       "sectionConnection": {
-        "order": 117,
+        "order": 126,
         "type": "text",
         "text": "───────  CONNECTION  ───────"
       },
       "showStatusDot": {
-        "order": 119,
+        "order": 128,
         "text": "Connection indicator (corner dot)",
         "type": "bool",
         "value": false
       },
       "websocketPort": {
-        "order": 120,
+        "order": 129,
         "text": "WebSocket relay port",
         "type": "textinput",
         "value": "8973"
@@ -672,7 +672,7 @@
       "setupNote3": {
         "order": 3,
         "type": "text",
-        "text": "iwr -useb https://raw.githubusercontent.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex"
+        "text": "iwr -useb https://raw.githubusercontent.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine/main/install-web.ps1 | iex"
       },
       "setupNote4": {
         "order": 4,
@@ -682,7 +682,7 @@
       "setupNote5": {
         "order": 5,
         "type": "text",
-        "text": "https://github.com/am1dreaming/Live-Lyrics-for-Wallpaper-Engine"
+        "text": "https://github.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine"
       },
       "bridgeNoteCovers": {
         "order": 7,
@@ -690,7 +690,7 @@
         "text": "⚠ LIVE COVERS & WORD-BY-WORD SYNC need the free bridge (install command above). Basic line-synced lyrics + cover still work without it via Windows Media."
       },
       "lyricsSource": {
-        "order": 118,
+        "order": 127,
         "text": "Lyrics source",
         "type": "combo",
         "value": "auto",
@@ -708,6 +708,104 @@
             "value": "relay"
           }
         ]
+      },
+      "upgradeLyrics": {
+        "order": 35,
+        "text": "Word-by-word lyrics from Apple Music / Spicy Lyrics when available",
+        "type": "bool",
+        "value": true
+      },
+      "translateTo": {
+        "order": 36,
+        "text": "Translate lyrics to",
+        "type": "combo",
+        "value": "",
+        "options": [
+          {
+            "label": "Off",
+            "value": ""
+          },
+          {
+            "label": "English",
+            "value": "en"
+          },
+          {
+            "label": "Persian",
+            "value": "fa"
+          },
+          {
+            "label": "Spanish",
+            "value": "es"
+          },
+          {
+            "label": "French",
+            "value": "fr"
+          },
+          {
+            "label": "German",
+            "value": "de"
+          },
+          {
+            "label": "Portuguese",
+            "value": "pt"
+          },
+          {
+            "label": "Italian",
+            "value": "it"
+          },
+          {
+            "label": "Arabic",
+            "value": "ar"
+          },
+          {
+            "label": "Hindi",
+            "value": "hi"
+          },
+          {
+            "label": "Korean",
+            "value": "ko"
+          },
+          {
+            "label": "Japanese",
+            "value": "ja"
+          },
+          {
+            "label": "Chinese",
+            "value": "zh-CN"
+          },
+          {
+            "label": "Russian",
+            "value": "ru"
+          },
+          {
+            "label": "Turkish",
+            "value": "tr"
+          }
+        ]
+      },
+      "romanize": {
+        "order": 37,
+        "text": "Romanize (Japanese, Korean, Chinese, Cyrillic...)",
+        "type": "bool",
+        "value": false
+      },
+      "showControls": {
+        "order": 80,
+        "text": "Playback controls (click: play/pause, skip, seek, lines)",
+        "type": "bool",
+        "value": true
+      },
+      "showUpNext": {
+        "order": 81,
+        "text": "Up next (Spotify)",
+        "type": "bool",
+        "value": true
+      },
+      "vinylCover": {
+        "order": 82,
+        "text": "Vinyl: spin the cover while playing",
+        "type": "bool",
+        "value": false
       }
     }
   }

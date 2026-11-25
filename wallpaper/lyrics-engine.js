@@ -12,7 +12,9 @@ window.LyricsEngine = (function () {
   let emphStrength = 1;
   let glowStrength = 1;
   let interludesOn = true;
-  const INTERLUDE_MIN_GAP = 2500;
+  let seekHandler = null;
+  let subtitles = null;          // per source line: translation / romanization, or ""
+  const INTERLUDE_MIN_GAP = 3000;
 
   // Emphasis curves as [progress, value] keyframes, smoothstep-interpolated.
   // WIDE = syllables held long enough to breathe, TIGHT = short ones.
@@ -80,7 +82,7 @@ window.LyricsEngine = (function () {
   }
 
   function clear() {
-    contentEl().innerHTML = "";
+    contentEl().textContent = "";
     lines = [];
     activeIndex = -1;
     type = "none";
@@ -141,34 +143,41 @@ window.LyricsEngine = (function () {
     data.lines.forEach((l) => {
       const gapStart = prevEnd == null ? 0 : prevEnd;
       if (l.startMs - gapStart >= INTERLUDE_MIN_GAP) pushInterlude(gapStart, l.startMs, frag);
-      prevEnd = l.endMs;
 
       const el = document.createElement("div");
       el.className = "line " + PHASE_IDLE + (l.isBackground ? " bg-line" : "");
       el.style.setProperty("--depth-blur", "0px");
 
+      const sourceIndex = data.lines.indexOf(l);
+      el.addEventListener("click", () => { if (seekHandler) seekHandler(l.startMs); });
       const rec = {
-        el, startMs: l.startMs, endMs: l.endMs,
+        el, sourceIndex, startMs: l.startMs, endMs: l.endMs,
         isBackground: !!l.isBackground, state: null,
         lineMode: true, words: [], allLetters: [],
       };
 
       let wordDefs;
+      let generated = false;
       if (type === "syllable" && Array.isArray(l.words) && l.words.length) {
         rec.lineMode = false;
         wordDefs = l.words.map((w) => ({ text: String(w.text).trim(), startMs: w.startMs, endMs: w.endMs }));
       } else {
 
-        const tokens = (l.text || " ").split(" ").filter((t) => t.length);
-        const total = tokens.reduce((a, t) => a + t.length, 0) || 1;
-        const dur = l.endMs - l.startMs;
-        let cum = 0;
+        generated = true;
+        // Line-timed lyrics: spread the words at a sung pace (longer words take longer)
+        // instead of stretching them over the whole line, so they light up word by word.
+        rec.lineMode = false;
+        const tokens = (l.text || " ").split(/\s+/).filter((t) => t.length);
+        const span = Math.max(400, l.endMs - l.startMs);
+        const natural = tokens.reduce((a, t) => a + 180 + t.length * 55, 0);
+        const sung = Math.min(span * 0.92, Math.max(span * 0.5, natural));
+        const total = tokens.reduce((a, t) => a + t.length + 1, 0) || 1;
+        let at = l.startMs;
         wordDefs = tokens.map((t) => {
-          const s = l.startMs + (cum / total) * dur;
-          cum += t.length;
-            return {
-                text: t, startMs: s, endMs: l.startMs + (cum / total) * dur
-            };
+          const len = (sung * (t.length + 1)) / total;
+          const w = { text: t, startMs: at, endMs: at + len };
+          at += len;
+          return w;
         });
       }
 
@@ -180,9 +189,27 @@ window.LyricsEngine = (function () {
         if (i < wordDefs.length - 1) el.appendChild(spaceEl());
       });
 
+      // The next gap starts when this line's last word ends (a line-timed line "lasts" until
+      // the next one, which would hide every instrumental break).
+      const lastWord = rec.words[rec.words.length - 1];
+      // A line-timed line is done shortly after its last (paced) word, not when the next one starts.
+      if (generated && lastWord) rec.endMs = Math.min(rec.endMs, lastWord.endMs + 700);
+      if (!l.isBackground) prevEnd = Math.max(prevEnd || 0, lastWord ? lastWord.endMs : l.endMs);
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      sub.textContent = (subtitles && subtitles[sourceIndex]) || "";
+      el.appendChild(sub);
+      rec.sub = sub;
       frag.appendChild(el);
       lines.push(rec);
     });
+
+    if (data.writers && data.writers.length) {
+      const credit = document.createElement("div");
+      credit.className = "credits";
+      credit.textContent = "Written by " + data.writers.join(", ");
+      frag.appendChild(credit);
+    }
 
     contentEl().appendChild(frag);
     contentEl().classList.toggle("no-interludes", !interludesOn);
@@ -313,8 +340,19 @@ window.LyricsEngine = (function () {
       } else {
         for (const w of rec.words) {
           const wp = phaseAt(currentTime, w.startMs, w.endMs);
-          if (wp === PHASE_LIVE) { setWipe(w.wg, wipeProgress(currentTime, w.startMs, w.endMs)); w.state = PHASE_LIVE; }
-          else if (w.state !== wp) { setWipe(w.wg, wp === PHASE_DONE ? 1 : 0); w.state = wp; }
+          if (wp === PHASE_LIVE) {
+            // the sweep moves letter by letter through the word
+            const p = wipeProgress(currentTime, w.startMs, w.endMs) * w.letters.length;
+            for (let k = 0; k < w.letters.length; k++) {
+              const lp = p - k;
+              setWipe(w.letters[k].el, lp <= 0 ? 0 : lp >= 1 ? 1 : lp);
+            }
+            w.state = PHASE_LIVE;
+          } else if (w.state !== wp) {
+            const v = wp === PHASE_DONE ? 1 : 0;
+            for (const lt of w.letters) setWipe(lt.el, v);
+            w.state = wp;
+          }
         }
       }
     }
@@ -348,6 +386,16 @@ window.LyricsEngine = (function () {
 
   function setEmphasisStrength(f) { emphStrength = isFinite(f) ? f : 1; }
   function setGlowStrength(f) { glowStrength = isFinite(f) ? f : 1; }
+  function setSeekHandler(fn) { seekHandler = fn; }
+
+  /** Translations or romanizations, one per source line ("" for none); shown under each line. */
+  function setSubtitles(list) {
+    subtitles = list && list.length ? list : null;
+    for (const rec of lines) {
+      if (rec.sub) rec.sub.textContent = (subtitles && subtitles[rec.sourceIndex]) || "";
+    }
+  }
+
   function setInterludes(on) {
     interludesOn = !!on;
     contentEl().classList.toggle("no-interludes", !interludesOn);
@@ -355,6 +403,6 @@ window.LyricsEngine = (function () {
 
   return {
     setLyrics, update, forceSnap, setEmphasis,
-    setEmphasisStrength, setGlowStrength, setInterludes,
+    setEmphasisStrength, setGlowStrength, setInterludes, setSeekHandler, setSubtitles,
   };
 })();

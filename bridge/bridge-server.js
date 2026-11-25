@@ -402,6 +402,7 @@ wss.on("connection", (ws, req) => {
   if (lastFullMessage && ws.readyState === WebSocket.OPEN) ws.send(lastFullMessage);
   if (lastArtMessage && ws.readyState === WebSocket.OPEN) ws.send(lastArtMessage);
   if (lastCanvasMessage && ws.readyState === WebSocket.OPEN) ws.send(lastCanvasMessage);
+  if (lastPlayerMessage && ws.readyState === WebSocket.OPEN) ws.send(lastPlayerMessage);
 
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
@@ -412,6 +413,21 @@ wss.on("connection", (ws, req) => {
     if (str) {
       let obj = null;
       try { obj = JSON.parse(str); } catch (_) {}
+      // Control requests (wallpaper buttons, clicked lines): Spotify through Spicetify when it
+      // is the player in use, any other player through Windows' media controls.
+      if (obj && typeof obj.command === "string") {
+        routeCommand(obj.command, ws);
+        return;
+      }
+
+      if (obj && (obj.track || obj.player || typeof obj.isPlaying === "boolean") && !obj.canvasVideo && !obj.animatedArt) {
+        ws.isSpicetify = true;
+        spicetifySeenAt = Date.now();
+        if (typeof obj.isPlaying === "boolean") spicetifyPlaying = obj.isPlaying;
+      }
+
+      if (obj && obj.player) lastPlayerMessage = str;
+
       if (obj && obj.track) {
         lastFullMessage = str;
 
@@ -424,7 +440,7 @@ wss.on("connection", (ws, req) => {
         // Deferred on purpose: a cache hit would otherwise publish the filled
         // message before this handler forwards the original one, and the empty
         // original would land last and wipe the lyrics again.
-        if (!hasLyricLines(obj.lyrics)) {
+        if (!hasLyricLines(obj.lyrics) && !obj.pending) {
           setImmediate(() => fillMissingLyrics(obj).catch((e) =>
             console.warn("[lyrics] fallback error:", e && e.message ? e.message : e)));
         }
@@ -466,6 +482,32 @@ wss.on("connection", (ws, req) => {
   });
   ws.on("error", (err) => console.warn("[bridge] client error:", err.message));
 });
+
+// ---- who plays: Spicetify (Spotify) or Windows' media controls --------------------------
+let lastPlayerMessage = null;
+let spicetifySeenAt = 0;
+let spicetifyPlaying = false;
+let smtcApp = "";
+
+function spicetifyActive() {
+  return Date.now() - spicetifySeenAt < 20000 && [...wss.clients].some((c) => c.isSpicetify && c.readyState === WebSocket.OPEN);
+}
+
+const SMTC_COMMAND_FILE = path.join(__dirname, "smtc-command.txt");
+const COMMANDS = /^(toggle|play|pause|next|previous|like|shuffle|repeat|seek \d{1,9})$/;
+
+function routeCommand(command, from) {
+  if (!COMMANDS.test(command)) return;
+  const toSpotify = spicetifyActive() && (spicetifyPlaying || /spotify/i.test(smtcApp) || !smtcApp);
+  if (toSpotify) {
+    for (const c of wss.clients) {
+      if (c !== from && c.isSpicetify && c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ command }));
+    }
+    return;
+  }
+  if (/^(like|shuffle|repeat)$/.test(command)) return;     // Windows can't do these
+  try { fs.writeFileSync(SMTC_COMMAND_FILE, command); } catch (e) { console.warn("[controls] cannot write command:", e.message); }
+}
 
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
@@ -1056,6 +1098,7 @@ function startSmtcProducer() {
   }
 
   let lastTrackKey = null;
+  let lastSmtcCover = "";
   let lastAnchorMs = null;
   let lastIsPlaying = null;
   let fetchToken = 0;
@@ -1085,6 +1128,11 @@ function startSmtcProducer() {
   });
 
   async function handleTick(o) {
+    smtcApp = o.app || "";
+    if (o.cover) lastSmtcCover = o.cover;
+    // Spotify with Spicetify sends better data (word-by-word lyrics, Canvas): let it speak
+    // while it is the player in use, and only fill in for other players.
+    if (spicetifyActive() && (spicetifyPlaying || /spotify/i.test(o.app || ""))) { lastTrackKey = null; return; }
     const key = (o.title || "") + "|" + (o.artist || "");
     const isNewTrack = key !== lastTrackKey;
 
@@ -1105,7 +1153,7 @@ function startSmtcProducer() {
       let coverUrl = "";
       try { coverUrl = await itunesCoverUrl(track.artist, track.album); } catch (_) {}
       if (fetchToken !== myToken) return;
-      track.coverUrl = coverUrl || "";
+      track.coverUrl = coverUrl || o.cover || "";
 
       let lyrics = null;
       try { lyrics = await lrclibLookup(track.artist, track.title, track.album, track.durationMs); }
