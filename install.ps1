@@ -21,6 +21,36 @@ $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir -and $MyInvocation.MyCommand.Path) { $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 if (-not $ScriptDir) { $ScriptDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
 
+# Started from inside the zip (Explorer runs it from a temp copy and deletes that copy as soon as
+# this window hands over to the elevated one), or without the project files next to it: put a
+# full copy in a stable folder first and run from there.
+$Stable = Join-Path $env:LOCALAPPDATA 'LyricMusic\setup'
+$hasFiles = (Test-Path -LiteralPath (Join-Path $ScriptDir 'wallpaper\index.html')) -and (Test-Path -LiteralPath (Join-Path $ScriptDir 'bridge\spicetify-lyrics-bridge.js'))
+$fromTemp = $ScriptDir -and ([IO.Path]::GetFullPath($ScriptDir)).StartsWith([IO.Path]::GetFullPath($env:TEMP), [StringComparison]::OrdinalIgnoreCase)
+if (($fromTemp -or -not $hasFiles) -and ([IO.Path]::GetFullPath($ScriptDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($Stable).TrimEnd('\'))) {
+  Write-Host "Preparing the installer files in $Stable ..."
+  if (Test-Path -LiteralPath $Stable) { Remove-Item -LiteralPath $Stable -Recurse -Force -ErrorAction SilentlyContinue }
+  New-Item -ItemType Directory -Force -Path $Stable | Out-Null
+  if ($hasFiles) {
+    Copy-Item -Path (Join-Path $ScriptDir '*') -Destination $Stable -Recurse -Force
+  } else {
+    $zip = Join-Path $env:TEMP 'live-lyrics-src.zip'
+    $tmp = Join-Path $env:TEMP 'live-lyrics-src'
+    Invoke-WebRequest -UseBasicParsing 'https://codeload.github.com/Kingexplosion707/Live-Lyrics-for-Wallpaper-Engine/zip/refs/heads/main' -OutFile $zip
+    if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Recurse -Force }
+    Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force
+    $inner = (Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1).FullName
+    Copy-Item -Path (Join-Path $inner '*') -Destination $Stable -Recurse -Force
+  }
+  $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Stable 'install.ps1'))
+  foreach ($kv in $PSBoundParameters.GetEnumerator()) {
+    if ($kv.Value -is [System.Management.Automation.SwitchParameter]) { if ($kv.Value.IsPresent) { $argList += "-$($kv.Key)" } }
+    else { $argList += "-$($kv.Key)"; $argList += [string]$kv.Value }
+  }
+  & powershell.exe @argList
+  return
+}
+
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   $self = $PSCommandPath
